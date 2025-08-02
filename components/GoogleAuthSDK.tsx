@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button, View, StyleSheet, Alert, Platform } from 'react-native';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -24,11 +24,14 @@ declare global {
 
 export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProps) {
   const [user, setUser] = useState<UserInfo | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true
   const [isGoogleLoaded, setIsGoogleLoaded] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'web') {
+      // First, try to restore user from localStorage
+      restoreUserFromStorage();
+      // Then load Google script
       loadGoogleScript();
     }
   }, []);
@@ -40,6 +43,56 @@ export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProp
     }
   }, [user, onUserChange]);
 
+  const restoreUserFromStorage = () => {
+    try {
+      const storedUser = localStorage.getItem('google_user');
+      const storedTokenExpiry = localStorage.getItem('google_token_expiry');
+      
+      if (storedUser && storedTokenExpiry) {
+        const expiryTime = parseInt(storedTokenExpiry);
+        const currentTime = Date.now();
+        
+        // Check if token is still valid (with 5 minute buffer)
+        if (currentTime < expiryTime - 300000) { // 5 minutes buffer
+          const userData = JSON.parse(storedUser);
+          console.log('Restored user from storage:', userData);
+          setUser(userData);
+          setLoading(false);
+          return;
+        } else {
+          // Token expired, clear storage
+          console.log('Stored token expired, clearing storage');
+          clearStoredAuth();
+        }
+      }
+    } catch (error) {
+      console.error('Error restoring user from storage:', error);
+      clearStoredAuth();
+    }
+    setLoading(false);
+  };
+
+  const clearStoredAuth = () => {
+    localStorage.removeItem('google_user');
+    localStorage.removeItem('google_token_expiry');
+    localStorage.removeItem('google_access_token');
+  };
+
+  const storeUserData = (userData: UserInfo, expiresIn: number = 3600) => {
+    try {
+      // Store user data
+      localStorage.setItem('google_user', JSON.stringify(userData));
+      
+      // Store expiry time (current time + expires_in seconds)
+      const expiryTime = Date.now() + (expiresIn * 1000);
+      localStorage.setItem('google_token_expiry', expiryTime.toString());
+      
+      console.log('User data stored, expires at:', new Date(expiryTime));
+    } catch (error) {
+      console.error('Error storing user data:', error);
+    }
+  };
+
   const loadGoogleScript = () => {
     // Load Google Identity Services script
     const script = document.createElement('script');
@@ -49,6 +102,10 @@ export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProp
     script.onload = () => {
       console.log('Google Identity Services loaded');
       initializeGoogleAuth();
+    };
+    script.onerror = () => {
+      console.error('Failed to load Google Identity Services');
+      setLoading(false);
     };
     document.head.appendChild(script);
   };
@@ -62,6 +119,7 @@ export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProp
       setIsGoogleLoaded(true);
       console.log('Google Auth initialized');
     }
+    setLoading(false);
   };
 
   const handleCredentialResponse = async (response: any) => {
@@ -77,6 +135,9 @@ export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProp
         name: payload.name,
         picture: payload.picture,
       };
+      
+      // Store user data with default 1 hour expiry
+      storeUserData(userInfo, 3600);
       
       setUser(userInfo);
       setLoading(false);
@@ -103,7 +164,10 @@ export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProp
       callback: async (tokenResponse: any) => {
         console.log('Token response:', tokenResponse);
         if (tokenResponse.access_token) {
-          await fetchUserInfo(tokenResponse.access_token);
+          // Store the access token for potential future use
+          localStorage.setItem('google_access_token', tokenResponse.access_token);
+          
+          await fetchUserInfo(tokenResponse.access_token, tokenResponse.expires_in);
         } else {
           Alert.alert('Error', 'No access token received');
           setLoading(false);
@@ -112,7 +176,7 @@ export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProp
     }).requestAccessToken();
   };
 
-  const fetchUserInfo = async (token: string) => {
+  const fetchUserInfo = async (token: string, expiresIn: number = 3600) => {
     console.log('Fetching user info with token...');
     try {
       const response = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -122,6 +186,10 @@ export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProp
       if (response.ok) {
         const userInfo = await response.json();
         console.log('User info received:', userInfo);
+        
+        // Store user data with actual expiry time
+        storeUserData(userInfo, expiresIn);
+        
         setUser(userInfo);
       } else {
         console.log('Failed to fetch user info:', response.status);
@@ -137,13 +205,26 @@ export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProp
 
   const signOut = () => {
     console.log('Signing out user');
+    
+    // Clear stored data
+    clearStoredAuth();
+    
+    // Clear React state
     setUser(null);
+    
+    // Optionally revoke Google token
+    if (window.google && window.google.accounts) {
+      window.google.accounts.id.disableAutoSelect();
+    }
+    
+    Alert.alert('Signed Out', 'You have been successfully signed out.');
   };
 
-  if (Platform.OS !== 'web') {
+  // Show loading state while checking stored auth
+  if (loading) {
     return (
       <ThemedView style={styles.container}>
-        <ThemedText>Google Sign-In with SDK is only available on web</ThemedText>
+        <ThemedText style={styles.loadingText}>⏳ Checking authentication...</ThemedText>
       </ThemedView>
     );
   }
@@ -167,10 +248,10 @@ export default function GoogleAuthSDK({ clientId, onUserChange }: GoogleAuthProp
         <Button
           title={loading ? "Signing in..." : "Sign in with Google"}
           onPress={signInWithGoogle}
-          disabled={loading || !isGoogleLoaded}
+          disabled={!isGoogleLoaded || loading}
         />
       </ThemedView>
-      {!isGoogleLoaded && (
+      {!isGoogleLoaded && !loading && (
         <ThemedText style={styles.loading}>Loading Google SDK...</ThemedText>
       )}
     </ThemedView>
@@ -199,6 +280,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginTop: 10,
     opacity: 0.6,
+    textAlign: 'center',
+  },
+  loadingText: {
+    fontSize: 14,
+    opacity: 0.7,
     textAlign: 'center',
   },
 });

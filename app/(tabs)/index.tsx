@@ -1,23 +1,23 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Image } from 'expo-image';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import GoogleAuthSDK from '@/components/GoogleAuthSDK';
-
-interface UserInfo {
-  id: string;
-  email: string;
-  name: string;
-  picture?: string;
-}
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function HomeScreen() {
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const { user, setUser } = useAuth();
+  const router = useRouter();
 
-  const handleUserChange = (userData: UserInfo | null) => {
+  const handleUserChange = (userData: any) => {
     setUser(userData);
+  };
+
+  const navigateToBooking = () => {
+    router.push('/booking');
   };
 
   return (
@@ -48,6 +48,15 @@ export default function HomeScreen() {
       </ThemedView>
 
       <ThemedView style={styles.authSection}>
+        {/* Show booking button above auth component when user is signed in */}
+        {user && (
+          <ThemedView style={styles.bookingSection}>
+            <TouchableOpacity style={styles.bookingButton} onPress={navigateToBooking}>
+              <ThemedText style={styles.bookingButtonText}>📦 Book Parcel Delivery</ThemedText>
+            </TouchableOpacity>
+          </ThemedView>
+        )}
+        
         <GoogleAuthSDK 
           clientId="904244077655-sj7458lm19tcsbei2heslgi93e62564f.apps.googleusercontent.com" 
           onUserChange={handleUserChange}
@@ -87,5 +96,31 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 300,
     alignItems: 'center',
+  },
+  bookingSection: {
+    marginBottom: 20,
+    width: '100%',
+    alignItems: 'center',
+  },
+  bookingButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 10,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  bookingButtonText: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

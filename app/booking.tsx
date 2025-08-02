@@ -5,6 +5,12 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 import { Button } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import LocationPicker from '@/components/LocationPicker';
+
+interface LocationCoordinates {
+  latitude: number;
+  longitude: number;
+}
 
 interface ParcelDetails {
   weight: string;
@@ -19,7 +25,9 @@ interface ParcelDetails {
 
 interface BookingData {
   pickupLocation: string;
+  pickupCoordinates?: LocationCoordinates;
   destination: string;
+  destinationCoordinates?: LocationCoordinates;
   parcelDetails: ParcelDetails;
   deliveryType: 'standard' | 'express' | 'overnight';
 }
@@ -27,6 +35,7 @@ interface BookingData {
 export default function BookingScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const [showValidation, setShowValidation] = useState(false);
   const [booking, setBooking] = useState<BookingData>({
     pickupLocation: '',
     destination: '',
@@ -55,6 +64,22 @@ export default function BookingScreen() {
     );
   }
 
+  const handlePickupLocationSelect = (address: string, coordinates: LocationCoordinates) => {
+    setBooking(prev => ({
+      ...prev,
+      pickupLocation: address,
+      pickupCoordinates: coordinates,
+    }));
+  };
+
+  const handleDestinationSelect = (address: string, coordinates: LocationCoordinates) => {
+    setBooking(prev => ({
+      ...prev,
+      destination: address,
+      destinationCoordinates: coordinates,
+    }));
+  };
+
   const updateBooking = (field: keyof BookingData, value: any) => {
     setBooking(prev => ({ ...prev, [field]: value }));
   };
@@ -78,24 +103,91 @@ export default function BookingScreen() {
 
   const calculateEstimatedCost = () => {
     const weight = parseFloat(booking.parcelDetails.weight) || 0;
-    const baseRate = booking.deliveryType === 'overnight' ? 25 : 
-                    booking.deliveryType === 'express' ? 15 : 10;
+    let baseRate = booking.deliveryType === 'overnight' ? 25 : 
+                   booking.deliveryType === 'express' ? 15 : 10;
+    
+    // Calculate distance-based pricing if coordinates are available
+    if (booking.pickupCoordinates && booking.destinationCoordinates) {
+      const distance = calculateDistance(
+        booking.pickupCoordinates,
+        booking.destinationCoordinates
+      );
+      const distanceCost = distance * 0.5; // $0.50 per km
+      baseRate += distanceCost;
+    }
+    
     return (baseRate + (weight * 2)).toFixed(2);
   };
 
+  const calculateDistance = (coord1: LocationCoordinates, coord2: LocationCoordinates) => {
+    const R = 6371; // Radius of the Earth in kilometers
+    const dLat = deg2rad(coord2.latitude - coord1.latitude);
+    const dLon = deg2rad(coord2.longitude - coord1.longitude);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(deg2rad(coord1.latitude)) *
+        Math.cos(deg2rad(coord2.latitude)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c; // Distance in kilometers
+    return distance;
+  };
+
+  const deg2rad = (deg: number) => {
+    return deg * (Math.PI / 180);
+  };
+
+  // Validation helper functions
+  const isFieldEmpty = (value: string) => !value.trim();
+  
+  const getFieldStyle = (value: string, isRequired: boolean = false) => {
+    if (showValidation && isRequired && isFieldEmpty(value)) {
+      return [styles.input, styles.inputError];
+    }
+    return styles.input;
+  };
+
+  const getLabelStyle = (value: string, isRequired: boolean = false) => {
+    if (showValidation && isRequired && isFieldEmpty(value)) {
+      return [styles.label, styles.labelError];
+    }
+    return styles.label;
+  };
+
   const handleBooking = () => {
+    // Show validation styling
+    setShowValidation(true);
+    
     // Validate required fields
-    if (!booking.pickupLocation || !booking.destination || !booking.parcelDetails.weight) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    const requiredFields = [
+      { field: booking.pickupLocation, name: 'Pickup location' },
+      { field: booking.destination, name: 'Destination' },
+      { field: booking.parcelDetails.weight, name: 'Weight' },
+    ];
+
+    const emptyFields = requiredFields.filter(({ field }) => isFieldEmpty(field));
+    
+    if (emptyFields.length > 0) {
+      const fieldNames = emptyFields.map(({ name }) => name).join(', ');
+      Alert.alert(
+        'Required Fields Missing', 
+        `Please fill in the following required fields:\n\n• ${emptyFields.map(({ name }) => name).join('\n• ')}`
+      );
       return;
     }
+
+    const distanceInfo = booking.pickupCoordinates && booking.destinationCoordinates
+      ? `\nDistance: ${calculateDistance(booking.pickupCoordinates, booking.destinationCoordinates).toFixed(1)} km`
+      : '';
 
     // In a real app, you would send this to your backend
     Alert.alert(
       'Booking Confirmed!',
-      `Hi ${user.name}!\n\nYour parcel delivery has been booked.\n\nFrom: ${booking.pickupLocation}\nTo: ${booking.destination}\nWeight: ${booking.parcelDetails.weight}kg\nEstimated Cost: $${calculateEstimatedCost()}\n\nConfirmation will be sent to: ${user.email}`,
+      `Hi ${user.name}!\n\nYour parcel delivery has been booked.\n\nFrom: ${booking.pickupLocation}\nTo: ${booking.destination}${distanceInfo}\nWeight: ${booking.parcelDetails.weight}kg\nEstimated Cost: $${calculateEstimatedCost()}\n\nConfirmation will be sent to: ${user.email}`,
       [{ text: 'OK', onPress: () => {
-        // Reset form and go back to home
+        // Reset form and validation state
+        setShowValidation(false);
         setBooking({
           pickupLocation: '',
           destination: '',
@@ -129,27 +221,19 @@ export default function BookingScreen() {
         <ThemedView style={styles.section}>
           <ThemedText type="subtitle" style={styles.sectionTitle}>Locations</ThemedText>
           
-          <ThemedView style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Pickup Location *</ThemedText>
-            <TextInput
-              style={styles.input}
-              value={booking.pickupLocation}
-              onChangeText={(text) => updateBooking('pickupLocation', text)}
-              placeholder="Enter pickup address"
-              placeholderTextColor="#999"
-            />
-          </ThemedView>
+          <LocationPicker
+            title="Pickup"
+            onLocationSelect={handlePickupLocationSelect}
+            initialAddress={booking.pickupLocation}
+            showError={showValidation && isFieldEmpty(booking.pickupLocation)}
+          />
 
-          <ThemedView style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Destination *</ThemedText>
-            <TextInput
-              style={styles.input}
-              value={booking.destination}
-              onChangeText={(text) => updateBooking('destination', text)}
-              placeholder="Enter destination address"
-              placeholderTextColor="#999"
-            />
-          </ThemedView>
+          <LocationPicker
+            title="Destination"
+            onLocationSelect={handleDestinationSelect}
+            initialAddress={booking.destination}
+            showError={showValidation && isFieldEmpty(booking.destination)}
+          />
         </ThemedView>
 
         {/* Parcel Details Section */}
@@ -157,15 +241,18 @@ export default function BookingScreen() {
           <ThemedText type="subtitle" style={styles.sectionTitle}>Parcel Details</ThemedText>
           
           <ThemedView style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Weight (kg) *</ThemedText>
+            <ThemedText style={getLabelStyle(booking.parcelDetails.weight, true)}>Weight (kg) *</ThemedText>
             <TextInput
-              style={styles.input}
+              style={getFieldStyle(booking.parcelDetails.weight, true)}
               value={booking.parcelDetails.weight}
               onChangeText={(text) => updateParcelDetails('weight', text)}
               placeholder="0.0"
               keyboardType="numeric"
               placeholderTextColor="#999"
             />
+            {showValidation && isFieldEmpty(booking.parcelDetails.weight) && (
+              <ThemedText style={styles.errorText}>This field is required</ThemedText>
+            )}
           </ThemedView>
 
           <ThemedText style={styles.label}>Dimensions (cm)</ThemedText>
@@ -247,6 +334,11 @@ export default function BookingScreen() {
         <ThemedView style={styles.section}>
           <ThemedView style={styles.costEstimate}>
             <ThemedText type="subtitle" style={styles.costText}>Estimated Cost: ${calculateEstimatedCost()}</ThemedText>
+            {booking.pickupCoordinates && booking.destinationCoordinates && (
+              <ThemedText style={styles.distanceText}>
+                Distance: {calculateDistance(booking.pickupCoordinates, booking.destinationCoordinates).toFixed(1)} km
+              </ThemedText>
+            )}
           </ThemedView>
         </ThemedView>
 
@@ -305,6 +397,12 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     fontWeight: '500',
   },
+  labelError: {
+    fontSize: 16,
+    marginBottom: 5,
+    fontWeight: '500',
+    color: '#FF3B30',
+  },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
@@ -313,6 +411,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     backgroundColor: Platform.OS === 'web' ? '#fff' : 'transparent',
     color: '#000',
+  },
+  inputError: {
+    borderWidth: 2,
+    borderColor: '#FF3B30',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    backgroundColor: Platform.OS === 'web' ? '#fff' : 'transparent',
+    color: '#000',
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 12,
+    marginTop: 4,
   },
   textArea: {
     height: 80,
@@ -340,6 +452,11 @@ const styles = StyleSheet.create({
   costText: {
     color: '#000000',
     fontWeight: 'bold',
+  },
+  distanceText: {
+    color: '#666',
+    fontSize: 14,
+    marginTop: 5,
   },
   bookingButtonContainer: {
     marginTop: 20,

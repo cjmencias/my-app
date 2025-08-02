@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
   },
   email: {
     fontSize: 16,
-    opacity: 0.7,
+    color: '#8E8E93',
     textAlign: 'center',
   },
   buttonContainer: {
@@ -279,12 +279,12 @@ const styles = StyleSheet.create({
   loading: {
     fontSize: 12,
     marginTop: 10,
-    opacity: 0.6,
+    color: '#8E8E93',
     textAlign: 'center',
   },
   loadingText: {
     fontSize: 14,
-    opacity: 0.7,
+    color: '#8E8E93',
     textAlign: 'center',
   },
 });

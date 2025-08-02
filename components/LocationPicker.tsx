@@ -615,7 +615,7 @@ export default function LocationPicker({ title, onLocationSelect, initialAddress
           value={address}
           onChangeText={handleAddressChange}
           placeholder="Enter address or use location services"
-          placeholderTextColor="#999"
+          placeholderTextColor="#8E8E93"
         />
         
         <TouchableOpacity 
@@ -676,6 +676,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
     fontWeight: '500',
+    color: '#1D1D1F',
   },
   labelError: {
     color: '#FF3B30',
@@ -688,16 +689,17 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: '#D1D1D6',
+    borderRadius: 12,
     padding: 12,
     fontSize: 16,
-    backgroundColor: Platform.OS === 'web' ? '#fff' : 'transparent',
-    color: '#000',
+    backgroundColor: '#F2F2F7',
+    color: '#1D1D1F',
   },
   inputError: {
     borderColor: '#FF3B30',
     borderWidth: 2,
+    backgroundColor: '#FFF5F5',
   },
   errorText: {
     color: '#FF3B30',
@@ -748,7 +750,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: Platform.OS === 'web' ? '#fff' : undefined,
+    backgroundColor: '#FFFFFF',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -756,37 +758,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-    backgroundColor: '#fff',
+    borderBottomColor: '#E5E5EA',
+    backgroundColor: '#FFFFFF',
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#1D1D1F',
   },
   closeButton: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#F2F2F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#666',
+    color: '#8E8E93',
   },
   mapContainer: {
     flex: 1,
+    backgroundColor: '#FFFFFF',
   },
   fallbackContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#FFFFFF',
   },
   fallbackText: {
     textAlign: 'center',
     fontSize: 16,
-    opacity: 0.7,
+    color: '#1D1D1F',
   },
 });

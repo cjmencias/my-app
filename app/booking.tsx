@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Alert, TextInput, Platform, TouchableOpacity } from 'react-native';
+import { ScrollView, StyleSheet, Alert, TextInput, Platform, TouchableOpacity, View, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
@@ -205,150 +205,186 @@ export default function BookingScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <ThemedView style={styles.content}>
-        {/* Back Button */}
-        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-          <ThemedText style={styles.backButtonText}>← Back to Home</ThemedText>
-        </TouchableOpacity>
-
-        <ThemedView style={styles.userHeader}>
-          <ThemedText type="title" style={styles.title}>Book Parcel Delivery</ThemedText>
-          <ThemedText style={styles.userWelcome}>Booking for: {user.name}</ThemedText>
-        </ThemedView>
-
-        {/* Location Section */}
-        <ThemedView style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Locations</ThemedText>
+    <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ThemedView style={styles.container}>
+        {/* Header */}
+        <ThemedView style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+            <ThemedText style={styles.backButtonText}>← Back</ThemedText>
+          </TouchableOpacity>
           
-          <LocationPicker
-            title="Pickup"
-            onLocationSelect={handlePickupLocationSelect}
-            initialAddress={booking.pickupLocation}
-            showError={showValidation && isFieldEmpty(booking.pickupLocation)}
-          />
-
-          <LocationPicker
-            title="Destination"
-            onLocationSelect={handleDestinationSelect}
-            initialAddress={booking.destination}
-            showError={showValidation && isFieldEmpty(booking.destination)}
-          />
-        </ThemedView>
-
-        {/* Parcel Details Section */}
-        <ThemedView style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Parcel Details</ThemedText>
-          
-          <ThemedView style={styles.inputGroup}>
-            <ThemedText style={getLabelStyle(booking.parcelDetails.weight, true)}>Weight (kg) *</ThemedText>
-            <TextInput
-              style={getFieldStyle(booking.parcelDetails.weight, true)}
-              value={booking.parcelDetails.weight}
-              onChangeText={(text) => updateParcelDetails('weight', text)}
-              placeholder="0.0"
-              keyboardType="numeric"
-              placeholderTextColor="#999"
-            />
-            {showValidation && isFieldEmpty(booking.parcelDetails.weight) && (
-              <ThemedText style={styles.errorText}>This field is required</ThemedText>
-            )}
-          </ThemedView>
-
-          <ThemedText style={styles.label}>Dimensions (cm)</ThemedText>
-          <ThemedView style={styles.dimensionsRow}>
-            <TextInput
-              style={[styles.input, styles.dimensionInput]}
-              value={booking.parcelDetails.dimensions.length}
-              onChangeText={(text) => updateDimensions('length', text)}
-              placeholder="Length"
-              keyboardType="numeric"
-              placeholderTextColor="#999"
-            />
-            <TextInput
-              style={[styles.input, styles.dimensionInput]}
-              value={booking.parcelDetails.dimensions.width}
-              onChangeText={(text) => updateDimensions('width', text)}
-              placeholder="Width"
-              keyboardType="numeric"
-              placeholderTextColor="#999"
-            />
-            <TextInput
-              style={[styles.input, styles.dimensionInput]}
-              value={booking.parcelDetails.dimensions.height}
-              onChangeText={(text) => updateDimensions('height', text)}
-              placeholder="Height"
-              keyboardType="numeric"
-              placeholderTextColor="#999"
-            />
-          </ThemedView>
-
-          <ThemedView style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Description</ThemedText>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={booking.parcelDetails.description}
-              onChangeText={(text) => updateParcelDetails('description', text)}
-              placeholder="Describe your parcel contents"
-              multiline
-              numberOfLines={3}
-              placeholderTextColor="#999"
-            />
-          </ThemedView>
-
-          <ThemedView style={styles.inputGroup}>
-            <ThemedText style={styles.label}>Declared Value ($)</ThemedText>
-            <TextInput
-              style={styles.input}
-              value={booking.parcelDetails.value}
-              onChangeText={(text) => updateParcelDetails('value', text)}
-              placeholder="0.00"
-              keyboardType="numeric"
-              placeholderTextColor="#999"
-            />
+          <ThemedView style={styles.headerContent}>
+            <ThemedText type="title" style={styles.title}>Book Delivery</ThemedText>
+            <ThemedText type="caption" style={styles.userWelcome}>
+              Booking for: {user.name}
+            </ThemedText>
           </ThemedView>
         </ThemedView>
 
-        {/* Delivery Type Section */}
-        <ThemedView style={styles.section}>
-          <ThemedText type="subtitle" style={styles.sectionTitle}>Delivery Type</ThemedText>
-          
-          <ThemedView style={styles.deliveryOptions}>
-            {[
-              { key: 'standard', label: 'Standard (3-5 days)', price: '+$10' },
-              { key: 'express', label: 'Express (1-2 days)', price: '+$15' },
-              { key: 'overnight', label: 'Overnight', price: '+$25' },
-            ].map((option) => (
-              <ThemedView key={option.key} style={styles.deliveryOption}>
-                <Button
-                  title={`${option.label} ${option.price}`}
-                  onPress={() => updateBooking('deliveryType', option.key)}
-                  color={booking.deliveryType === option.key ? '#007AFF' : '#999'}
+        <ThemedView style={styles.content}>
+          {/* Location Section */}
+          <ThemedView type="card" style={styles.section}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>📍 Locations</ThemedText>
+            
+            <LocationPicker
+              title="Pickup"
+              onLocationSelect={handlePickupLocationSelect}
+              initialAddress={booking.pickupLocation}
+              showError={showValidation && isFieldEmpty(booking.pickupLocation)}
+            />
+
+            <LocationPicker
+              title="Destination"
+              onLocationSelect={handleDestinationSelect}
+              initialAddress={booking.destination}
+              showError={showValidation && isFieldEmpty(booking.destination)}
+            />
+          </ThemedView>
+
+          {/* Parcel Details Section */}
+          <ThemedView type="card" style={styles.section}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>📦 Parcel Details</ThemedText>
+            
+            <ThemedView style={styles.inputGroup}>
+              <ThemedText style={getLabelStyle(booking.parcelDetails.weight, true)}>Weight (kg) *</ThemedText>
+              <TextInput
+                style={getFieldStyle(booking.parcelDetails.weight, true)}
+                value={booking.parcelDetails.weight}
+                onChangeText={(text) => updateParcelDetails('weight', text)}
+                placeholder="0.0"
+                keyboardType="numeric"
+                placeholderTextColor="#8E8E93"
+              />
+              {showValidation && isFieldEmpty(booking.parcelDetails.weight) && (
+                <ThemedText style={styles.errorText}>This field is required</ThemedText>
+              )}
+            </ThemedView>
+
+            <ThemedText style={styles.label}>Dimensions (cm)</ThemedText>
+            <ThemedView style={styles.dimensionsRow}>
+              <ThemedView style={styles.dimensionGroup}>
+                <ThemedText style={styles.dimensionLabel}>Length</ThemedText>
+                <TextInput
+                  style={[styles.input, styles.dimensionInput]}
+                  value={booking.parcelDetails.dimensions.length}
+                  onChangeText={(text) => updateDimensions('length', text)}
+                  placeholder="0"
+                  keyboardType="numeric"
+                  placeholderTextColor="#8E8E93"
                 />
               </ThemedView>
-            ))}
-          </ThemedView>
-        </ThemedView>
+              
+              <ThemedView style={styles.dimensionGroup}>
+                <ThemedText style={styles.dimensionLabel}>Width</ThemedText>
+                <TextInput
+                  style={[styles.input, styles.dimensionInput]}
+                  value={booking.parcelDetails.dimensions.width}
+                  onChangeText={(text) => updateDimensions('width', text)}
+                  placeholder="0"
+                  keyboardType="numeric"
+                  placeholderTextColor="#8E8E93"
+                />
+              </ThemedView>
+              
+              <ThemedView style={styles.dimensionGroup}>
+                <ThemedText style={styles.dimensionLabel}>Height</ThemedText>
+                <TextInput
+                  style={[styles.input, styles.dimensionInput]}
+                  value={booking.parcelDetails.dimensions.height}
+                  onChangeText={(text) => updateDimensions('height', text)}
+                  placeholder="0"
+                  keyboardType="numeric"
+                  placeholderTextColor="#8E8E93"
+                />
+              </ThemedView>
+            </ThemedView>
 
-        {/* Cost Estimate */}
-        <ThemedView style={styles.section}>
-          <ThemedView style={styles.costEstimate}>
-            <ThemedText type="subtitle" style={styles.costText}>Estimated Cost: ${calculateEstimatedCost()}</ThemedText>
+            <ThemedView style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Description</ThemedText>
+              <TextInput
+                style={[styles.input, styles.textArea]}
+                value={booking.parcelDetails.description}
+                onChangeText={(text) => updateParcelDetails('description', text)}
+                placeholder="Describe your parcel contents"
+                multiline
+                numberOfLines={3}
+                placeholderTextColor="#8E8E93"
+              />
+            </ThemedView>
+
+            <ThemedView style={styles.inputGroup}>
+              <ThemedText style={styles.label}>Declared Value ($)</ThemedText>
+              <TextInput
+                style={styles.input}
+                value={booking.parcelDetails.value}
+                onChangeText={(text) => updateParcelDetails('value', text)}
+                placeholder="0.00"
+                keyboardType="numeric"
+                placeholderTextColor="#8E8E93"
+              />
+            </ThemedView>
+          </ThemedView>
+
+          {/* Delivery Type Section */}
+          <ThemedView type="card" style={styles.section}>
+            <ThemedText type="subtitle" style={styles.sectionTitle}>🚚 Delivery Options</ThemedText>
+            
+            <ThemedView style={styles.deliveryOptions}>
+              {[
+                { key: 'standard', label: 'Standard', sublabel: '3-5 days', price: '$10', color: '#34C759' },
+                { key: 'express', label: 'Express', sublabel: '1-2 days', price: '$15', color: '#FF9500' },
+                { key: 'overnight', label: 'Overnight', sublabel: 'Next day', price: '$25', color: '#FF3B30' },
+              ].map((option) => (
+                <TouchableOpacity
+                  key={option.key}
+                  style={[
+                    styles.deliveryOption,
+                    booking.deliveryType === option.key && styles.deliveryOptionSelected
+                  ]}
+                  onPress={() => updateBooking('deliveryType', option.key)}
+                >
+                  <View style={[styles.deliveryIcon, { backgroundColor: option.color }]}>
+                    <ThemedText style={styles.deliveryIconText}>🚚</ThemedText>
+                  </View>
+                  <View style={styles.deliveryContent}>
+                    <ThemedText type="defaultSemiBold" style={styles.deliveryLabel}>
+                      {option.label}
+                    </ThemedText>
+                    <ThemedText type="caption" style={styles.deliverySublabel}>
+                      {option.sublabel}
+                    </ThemedText>
+                  </View>
+                  <ThemedText type="defaultSemiBold" style={styles.deliveryPrice}>
+                    {option.price}
+                  </ThemedText>
+                </TouchableOpacity>
+              ))}
+            </ThemedView>
+          </ThemedView>
+
+          {/* Cost Estimate */}
+          <View style={styles.costEstimate}>
+            <View style={styles.costHeader}>
+              <Text style={styles.costIcon}>💰</Text>
+              <Text style={styles.costLabel}>Estimated Total</Text>
+            </View>
+            <Text style={styles.costAmount}>${calculateEstimatedCost()}</Text>
             {booking.pickupCoordinates && booking.destinationCoordinates && (
-              <ThemedText style={styles.distanceText}>
-                Distance: {calculateDistance(booking.pickupCoordinates, booking.destinationCoordinates).toFixed(1)} km
-              </ThemedText>
+              <View style={styles.costDetails}>
+                <Text style={styles.distanceText}>
+                  📏 Distance: {calculateDistance(booking.pickupCoordinates, booking.destinationCoordinates).toFixed(1)} km
+                </Text>
+              </View>
             )}
-          </ThemedView>
-        </ThemedView>
+            <Text style={styles.costNote}>
+              * Final price may vary based on actual package dimensions and delivery requirements
+            </Text>
+          </View>
 
-        {/* Book Button */}
-        <ThemedView style={styles.bookingButtonContainer}>
-          <Button
-            title="Book Delivery"
-            onPress={handleBooking}
-            color="#007AFF"
-          />
+          {/* Book Button */}
+          <TouchableOpacity style={styles.bookButton} onPress={handleBooking}>
+            <ThemedText style={styles.bookButtonText}>📦 Confirm Booking</ThemedText>
+          </TouchableOpacity>
         </ThemedView>
       </ThemedView>
     </ScrollView>
@@ -356,75 +392,89 @@ export default function BookingScreen() {
 }
 
 const styles = StyleSheet.create({
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#F2F2F7',
+  },
   container: {
     flex: 1,
+    backgroundColor: '#F2F2F7',
   },
-  content: {
-    padding: 20,
+  header: {
+    backgroundColor: '#FFFFFF',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   backButton: {
-    marginBottom: 20,
-    paddingVertical: 10,
+    alignSelf: 'flex-start',
+    marginBottom: 16,
   },
   backButtonText: {
     fontSize: 16,
     color: '#007AFF',
+    fontWeight: '500',
   },
-  userHeader: {
+  headerContent: {
     alignItems: 'center',
-    marginBottom: 30,
   },
   title: {
-    textAlign: 'center',
-    marginBottom: 5,
+    marginBottom: 4,
+    color: '#1D1D1F',
   },
   userWelcome: {
-    fontSize: 14,
-    opacity: 0.7,
-    textAlign: 'center',
+    color: '#8E8E93',
+  },
+  content: {
+    padding: 20,
   },
   section: {
-    marginBottom: 25,
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 3,
+    borderColor: '#000000',
   },
   sectionTitle: {
-    marginBottom: 15,
+    marginBottom: 16,
+    color: '#1D1D1F',
   },
   inputGroup: {
-    marginBottom: 15,
+    marginBottom: 16,
   },
   label: {
     fontSize: 16,
-    marginBottom: 5,
+    marginBottom: 8,
     fontWeight: '500',
+    color: '#1D1D1F',
   },
   labelError: {
-    fontSize: 16,
-    marginBottom: 5,
-    fontWeight: '500',
     color: '#FF3B30',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 2,
+    borderColor: '#000000',
+    borderRadius: 12,
+    padding: 16,
     fontSize: 16,
-    backgroundColor: Platform.OS === 'web' ? '#fff' : 'transparent',
-    color: '#000',
+    backgroundColor: '#FFFFFF',
+    color: '#000000',
   },
   inputError: {
-    borderWidth: 2,
     borderColor: '#FF3B30',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: Platform.OS === 'web' ? '#fff' : 'transparent',
-    color: '#000',
-  },
-  errorText: {
-    color: '#FF3B30',
-    fontSize: 12,
-    marginTop: 4,
+    borderWidth: 3,
+    backgroundColor: '#FFF5F5',
   },
   textArea: {
     height: 80,
@@ -432,34 +482,137 @@ const styles = StyleSheet.create({
   },
   dimensionsRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
+    flexWrap: 'wrap', // Allows wrapping on very small screens
+  },
+  dimensionGroup: {
+    flex: 1,
+    minWidth: 100, // Increased to accommodate full text
+    maxWidth: 150, // Increased maximum width
+  },
+  dimensionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#000000',
+    textAlign: 'center',
+    marginBottom: 4,
   },
   dimensionInput: {
-    flex: 1,
+    textAlign: 'center',
+    minHeight: 44, // Ensures good touch target
+  },
+  errorText: {
+    color: '#FF3B30',
+    fontSize: 12,
+    marginTop: 4,
   },
   deliveryOptions: {
-    gap: 10,
+    gap: 12,
   },
   deliveryOption: {
-    marginBottom: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#000000',
+    backgroundColor: '#FFFFFF',
+    marginBottom: 8,
+  },
+  deliveryOptionSelected: {
+    borderColor: '#007AFF',
+    borderWidth: 3,
+    backgroundColor: '#E3F2FD', // Light blue background when selected
+  },
+  deliveryIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  deliveryIconText: {
+    fontSize: 18,
+  },
+  deliveryContent: {
+    flex: 1,
+    backgroundColor: 'transparent', // Ensure no background color
+  },
+  deliveryLabel: {
+    color: '#000000',
+    marginBottom: 2,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  deliverySublabel: {
+    color: '#555555', // Slightly lighter for better contrast on blue background
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  deliveryPrice: {
+    color: '#000000',
+    fontSize: 18,
+    fontWeight: '700',
   },
   costEstimate: {
-    padding: 15,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 8,
-    alignItems: 'center',
+    backgroundColor: '#F8F9FA',
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderLeftWidth: 4,
+    borderLeftColor: '#34C759',
   },
-  costText: {
+  costHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  costIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  costLabel: {
+    fontSize: 16,
+    fontWeight: '600',
     color: '#000000',
-    fontWeight: 'bold',
+  },
+  costAmount: {
+    fontSize: 28,
+    fontWeight: '900',
+    color: '#34C759',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  costDetails: {
+    alignItems: 'center',
+    marginBottom: 8,
   },
   distanceText: {
-    color: '#666',
+    color: '#666666',
     fontSize: 14,
-    marginTop: 5,
+    fontWeight: '500',
   },
-  bookingButtonContainer: {
-    marginTop: 20,
-    marginBottom: 40,
+  costNote: {
+    fontSize: 11,
+    color: '#888888',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  bookButton: {
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 20,
+    paddingHorizontal: 30,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 20,
+    borderWidth: 3,
+    borderColor: '#000000',
+  },
+  bookButtonText: {
+    color: '#000000',
+    fontSize: 20,
+    fontWeight: '900',
   },
 });
